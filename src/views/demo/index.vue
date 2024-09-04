@@ -9,7 +9,7 @@
         </div>
         <!-- 模拟被webview嵌入 -->
         <div class="embed-wrapper">
-
+            <drag-drop />
         </div>
         <div style="text-align: center;"><code>模拟被webview嵌入</code></div>
     </div>
@@ -18,6 +18,8 @@
 <script lang="ts" setup>
 import { PAGE_ENUMS } from '@/routes/enums';
 import { useRouter } from 'vue-router';
+
+import DragDrop from "./modules/drag-drop.vue";
 
 const router = useRouter()
 

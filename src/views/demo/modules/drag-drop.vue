@@ -12,7 +12,7 @@
         </div>
 
         <div class="page-content">
-            <div class="page-content_wrapper">
+            <div class="page-content_wrapper" :style="{ '--page-max-width': `${pageMaxWidth}px`, '--gap-size': `${gapSize}px`, '--grid-size': `${gridSize}px`, }">
                 <div class="grid-stack" @click="selectItemRotate"></div>
             </div>
         </div>
@@ -43,6 +43,8 @@ const SomeThingTypeHelper = new EnumHelper(SomeThingType)
 const grid = ref<GridStack>()
 
 const scale = ref({ x: 1, y: 1 });
+const gapSize = 5;  // 背景网格间隙大小
+const gridSize = 5; // 移动物体相互的表现距离
 // @ts-ignore
 const pageMaxWidth = 600;  // 页面最大宽度
 const updateScaleCssVariable = () => {
@@ -86,6 +88,7 @@ onMounted(() => {
             minRow: 3,
             acceptWidgets: true,
             cellHeight: 50,
+            margin: gapSize,
             removable: '#trash', // drag-out delete class
             // disableResize: true,
         });
@@ -109,9 +112,6 @@ onMounted(() => {
 
     resizeObserver.observe(document.body);
 })
-
-
-
 
 onUnmounted(() => {
     grid.value?.destroy()
@@ -180,24 +180,23 @@ function clear() {
 
 
     .page-content {
-        --grid-size: 10px;
         --move-item-deviation: 0px;
         flex-grow: 1;
         overflow: auto;
 
         &_wrapper {
-            width: 600px;
+            width: calc(var(--page-max-width) + var(--gap-size) * 2);
+            padding: var(--gap-size);
             transform: translate(0, 0) scale(var(--global-scale-x), var(--global-scale-y));
             transform-origin: 0 0;
-        }
 
-        .grid-stack {
-            --temp-size: calc(var(--grid-size) + var(--move-item-deviation) * 2);
+            --temp-size: calc((var(--grid-size) + var(--move-item-deviation) * 2) * 2);
             background-image: linear-gradient(to right, transparent calc(var(--temp-size) - 1px), #ccc 100%),
                 linear-gradient(to bottom, transparent calc(var(--temp-size) - 1px), #ccc 100%);
             background-repeat: repeat;
             background-size: var(--temp-size) var(--temp-size);
             border-radius: 5px;
+            background-position: calc(var(--gap-size) * 2) calc(var(--gap-size) * 2);
         }
     }
 

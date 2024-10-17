@@ -3,9 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # 当推送到 main 分支时触发
-  pull_request:
-    branches:
       - main
 
 jobs:
@@ -19,17 +16,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20  # 需确保与你的项目版本一致
-          cache: 'pnpm'
+          node-version: 20  # 你的 Node.js 版本
+          cache: 'pnpm'  # 使用 pnpm 缓存
 
-      - name: Install dependencies
+      - name: Enable Corepack and Install pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install Dependencies
         run: pnpm install
 
-      - name: Build project
+      - name: Build Project
         run: pnpm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist  # 构建后的静态文件目录
+          publish_dir: ./dist

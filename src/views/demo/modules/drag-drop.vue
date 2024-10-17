@@ -6,7 +6,7 @@
                 height: item.size.height + 'px',
             }" :key="index" :gs-w="`${item.size.width}px`" :gs-h="`${item.size.height}px`">
                 <div class="grid-stack-item-content" :class="{ 'horizontal': item.direction === SomeThingDirection.横向 }">
-                    <!-- <span>{{ item.description }}</span> -->
+                    <span>{{ item.id }}</span>
                 </div>
             </div>
         </div>
@@ -20,7 +20,7 @@
 
         <div class="page-footer">
             <div style="display: flex;justify-content: space-around;width: 100%;">
-                <button>设置</button>
+                <button @click="refreshPage">刷新页面</button>
                 <button @click="save">确认</button>
                 <button @click="clear">清空</button>
                 <div class="trash" id="trash">回收站</div>
@@ -30,11 +30,11 @@
 </template>
 
 <script lang="ts" setup>
-import { GridStack } from 'gridstack';
+import { GridStack, type GridStackWidget, type GridStackElement } from 'gridstack';
 import { onMounted, ref } from "vue";
 
 import { EnumHelper } from './utils/helper'
-import { ISomeThing, SomeThingDirection, SomeThingType } from './types'
+import { ISomeThing, MyGridStackWidget, SomeThingDirection, SomeThingType } from './types'
 import { nextTick } from 'vue';
 import { onUnmounted } from 'vue';
 
@@ -86,28 +86,43 @@ const resizeObserver = new ResizeObserver((_entries) => {
     // }
 });
 
+const GRID_CACHE_KEY = 'grid-cache'
+const serializedData = ref<MyGridStackWidget[]>()
+
 onMounted(() => {
-    // 初始化拖拽
-    nextTick(() => { // 等待页面渲染完成 | 否则无法获取到header上的元素
+    const cache = JSON.parse(localStorage.getItem(GRID_CACHE_KEY) || '[]') as MyGridStackWidget[];
+    serializedData.value = cache;
+
+    nextTick(() => {
         grid.value = GridStack.init({
             float: true,
             minRow: 6,
             acceptWidgets: true,
             cellHeight: 50,
             margin: gapSize,
-            removable: '#trash', // drag-out delete class
-            // disableResize: true,
+            removable: '#trash'
         });
-        grid.value.float(true);
+
+        // 加载缓存数据
+        if (cache) {
+            grid.value.load(cache);
+            // 遍历数据并设置自定义方向样式
+            cache.forEach(node => {
+                // ⚠️ `.page-content` 非常关键，限定了查找范围，否则会查找到header中的元素
+                const element = document.querySelector(`.page-content .grid-stack-item[gs-x="${node.x}"][gs-y="${node.y}"]`);
+                if (element && node.direction) {
+                    const content = element.querySelector('.grid-stack-item-content');
+                    if (content) {
+                        content.classList.toggle('horizontal', node.direction === SomeThingDirection.横向);
+                    }
+                }
+            })
+        }
+
         GridStack.setupDragIn('.page-header .grid-stack-item', {
-            appendTo: 'body', helper: (ev) => {
-                const node = (ev.target as HTMLElement)?.cloneNode() as HTMLElement
-
-                // 获取原始元素的宽高
-                // const { width, height } = (ev.target as HTMLElement).getBoundingClientRect()
-                // node.style.width = width + 'px'
-                // node.style.height = height + 'px'
-
+            appendTo: 'body',
+            helper: (ev) => {
+                const node = (ev.target as HTMLElement)?.cloneNode(true) as HTMLElement
                 node.appendChild(document.createTextNode('……'))
                 return node
             }
@@ -129,28 +144,50 @@ function selectItemRotate(ev: Event) {
     const selected = ev.target as HTMLElement
 
     if (selected?.classList.contains('grid-stack-item-content')) {
-        // 清除其他选中
-        document.querySelectorAll('.grid-stack-item-content').forEach(item => {
+        // ⚠️ `.page-content` 非常关键，限定了查找范围，否则会查找到header中的元素
+        document.querySelectorAll('.page-content .grid-stack-item-content').forEach(item =>
             item.classList.remove('selected')
-        })
+        )
         selected.classList.add('selected')
 
-        grid.value?.getGridItems().forEach(item => {
-            if (item === selected?.parentElement) {
-                // console.log(item.gridstackNode);
-                grid.value?.rotate(item)
-            }
-        })
+        const parent = selected.closest('.grid-stack-item') as GridStackElement
+        if (parent) {
+            // 旋转方向 ｜ 切换类名，达到旋转效果
+            const isHorizontal = selected.classList.toggle('horizontal')
+            // 这里可以根据需要更新节点的数据模型，确保方向同步
+            console.log(`Element rotated to: ${isHorizontal ? 'horizontal' : 'vertical'}`);
+            grid.value?.rotate(parent);
+        }
     }
 }
-
 // 清空
 function clear() {
     grid.value?.removeAll()
 }
 
-// TODO: 缓存
+// 缓存
 function save() {
+    const data = grid.value?.save() as GridStackWidget[];
+    if (data) {
+        // 将每个节点的方向属性添加到保存的数据中
+        const enrichedData = data.map(node => {
+            // ⚠️ `.page-content` 非常关键，限定了查找范围，否则会查找到header中的元素
+            const element = document.querySelector(`.page-content .grid-stack-item[gs-x="${node.x}"][gs-y="${node.y}"]`);
+            const direction = element?.querySelector('.grid-stack-item-content')?.classList.contains('horizontal')
+                ? SomeThingDirection.横向
+                : undefined;
+            return { ...node, direction };
+        });
+
+        serializedData.value = enrichedData;
+        localStorage.setItem(GRID_CACHE_KEY, JSON.stringify(enrichedData));
+        console.log('Data saved:', enrichedData);
+    }
+}
+
+// 刷新页面
+function refreshPage() {
+    window.location.reload();
 }
 
 </script>

@@ -1,3 +1,5 @@
+import type { GridStackWidget } from "gridstack";
+
 /**
  * `物品` 接口定义
  */
@@ -35,4 +37,8 @@ export interface ISomeThingSize {
   height: number;
   /** 暂时没做“深度”的考虑 */
   depth?: number;
+}
+
+export interface MyGridStackWidget extends GridStackWidget {
+  direction?: SomeThingDirection;
 }

@@ -21,7 +21,7 @@
         <div class="page-footer">
             <div style="display: flex;justify-content: space-around;width: 100%;">
                 <button @click="refreshPage">刷新页面</button>
-                <button @click="save">确认</button>
+                <button @click="save">缓存</button>
                 <button @click="clear">清空</button>
                 <div class="trash" id="trash">回收站</div>
             </div>

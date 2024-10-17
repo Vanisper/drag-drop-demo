@@ -5,14 +5,15 @@
                 width: item.size.width + 'px',
                 height: item.size.height + 'px',
             }" :key="index" :gs-w="`${item.size.width}px`" :gs-h="`${item.size.height}px`">
-                <div class="grid-stack-item-content">
+                <div class="grid-stack-item-content" :class="{ 'horizontal': item.direction === SomeThingDirection.横向 }">
                     <!-- <span>{{ item.description }}</span> -->
                 </div>
             </div>
         </div>
 
         <div class="page-content">
-            <div class="page-content_wrapper" :style="{ '--page-max-width': `${pageMaxWidth}px`, '--gap-size': `${gapSize}px`, '--grid-size': `${gridSize}px`, }">
+            <div class="page-content_wrapper"
+                :style="{ '--page-max-width': `${pageMaxWidth}px`, '--gap-size': `${gapSize}px`, '--grid-size': `${gridSize}px`, }">
                 <div class="grid-stack" @click="selectItemRotate"></div>
             </div>
         </div>
@@ -20,7 +21,7 @@
         <div class="page-footer">
             <div style="display: flex;justify-content: space-around;width: 100%;">
                 <button>设置</button>
-                <button>确认</button>
+                <button @click="save">确认</button>
                 <button @click="clear">清空</button>
                 <div class="trash" id="trash">回收站</div>
             </div>
@@ -33,12 +34,33 @@ import { GridStack } from 'gridstack';
 import { onMounted, ref } from "vue";
 
 import { EnumHelper } from './utils/helper'
-import { ISomeThing, SomeThingType } from './types'
+import { ISomeThing, SomeThingDirection, SomeThingType } from './types'
 import { nextTick } from 'vue';
 import { onUnmounted } from 'vue';
 
-const someThings = ref<ISomeThing[]>()
 const SomeThingTypeHelper = new EnumHelper(SomeThingType)
+
+const someThings = ref<ISomeThing[]>([
+    {
+        id: 1,
+        type: SomeThingType.柜子,
+        size: { width: 60, height: 120, depth: 1 },
+        description: SomeThingTypeHelper.getKeyByValue(SomeThingType.柜子),
+    },
+    {
+        id: 2,
+        type: SomeThingType.板凳,
+        size: { width: 40, height: 40, depth: 1 },
+        description: SomeThingTypeHelper.getKeyByValue(SomeThingType.板凳),
+    },
+    {
+        id: 3,
+        type: SomeThingType.柜子,
+        size: { width: 120, height: 60, depth: 1 },
+        direction: SomeThingDirection.横向,
+        description: SomeThingTypeHelper.getKeyByValue(SomeThingType.柜子),
+    },
+])
 
 const grid = ref<GridStack>()
 
@@ -65,27 +87,11 @@ const resizeObserver = new ResizeObserver((_entries) => {
 });
 
 onMounted(() => {
-    // 初始化物品数据
-    ; (someThings.value ??= []).push(
-        ...Array.from({ length: 2 }).map((_, index) => ({
-            id: index + 1,
-            type: SomeThingType.柜子,
-            size: { width: 60, height: 120, depth: 1 },
-            description: SomeThingTypeHelper.getKeyByValue(SomeThingType.柜子)! + index,
-        })),
-        ...Array.from({ length: 5 }).map((_, index) => ({
-            id: index + 1,
-            type: SomeThingType.板凳,
-            size: { width: 40, height: 40, depth: 1 },
-            description: SomeThingTypeHelper.getKeyByValue(SomeThingType.板凳)! + index,
-        })),
-    )
-
-
     // 初始化拖拽
     nextTick(() => { // 等待页面渲染完成 | 否则无法获取到header上的元素
         grid.value = GridStack.init({
-            minRow: 3,
+            float: true,
+            minRow: 6,
             acceptWidgets: true,
             cellHeight: 50,
             margin: gapSize,
@@ -141,6 +147,10 @@ function selectItemRotate(ev: Event) {
 // 清空
 function clear() {
     grid.value?.removeAll()
+}
+
+// TODO: 缓存
+function save() {
 }
 
 </script>
@@ -228,6 +238,26 @@ function clear() {
 
     &.selected {
         background-color: #f39c12;
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 3px;
+        background-color: #165dff;
+    }
+
+    &.horizontal {
+        padding-left: 5px;
+
+        &::after {
+            top: 0;
+            height: 100%;
+            width: 3px;
+        }
     }
 }
 
